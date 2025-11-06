@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Portal de Facturación - Prueba</title></head>
+<body>
+  <h2>Portal Facturación - Test</h2>
+  <label>RFC</label><br>
+  <input id="rfc" name="rfc" placeholder="RFC"><br><br>
+
+  <label>Total</label><br>
+  <input id="total" name="total" placeholder="Total"><br><br>
+
+  <!-- Fake reCAPTCHA -->
+  <div id="fake-recaptcha" style="width:100px;height:30px;border:1px solid #333;display:flex;align-items:center;cursor:pointer;">
+    <input type="checkbox" id="chk"><label for="chk">No soy robot</label>
+  </div>
+  <br>
+
+  <button id="submit">Enviar Factura</button>
+
+  <script>
+    document.getElementById('submit').addEventListener('click', function(){
+      const rfc = document.getElementById('rfc').value;
+      const total = document.getElementById('total').value;
+      const checked = document.getElementById('chk').checked;
+      if(!rfc){ alert('Falta RFC'); return; }
+      if(!checked){ alert('Resuelve el captcha (falso)'); return; }
+      alert('Factura enviada:\\nRFC='+rfc+'\\nTotal='+total);
+    });
+  </script>
+</body>
+</html>
