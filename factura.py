@@ -23,17 +23,13 @@ def run(url, rfc, total, proveedor):
     opts.add_argument("--disable-gpu")
     opts.add_argument("--disable-software-rasterizer")
     opts.add_argument("--remote-debugging-port=0")
-
-    # Si estás en un servidor (n8n / Grok), deja esto activado:
-    opts.add_argument("--headless=new")
-
-    # Si lo pruebas localmente y quieres ver la ventana de Chrome,
-    # comenta la línea anterior:
-    # opts.add_argument("--headless=new")
+    opts.add_argument("--headless=new")  # Ejecuta en segundo plano (headless)
 
     driver = None
     try:
+        print(f"[INFO] Iniciando navegador Chrome...")
         driver = webdriver.Chrome(options=opts)
+        print(f"[INFO] Abriendo URL: {url}")
         driver.get(url)
         wait = WebDriverWait(driver, 10)
 
@@ -42,6 +38,7 @@ def run(url, rfc, total, proveedor):
             el = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input#rfc")))
             el.clear()
             el.send_keys(normaliza_rfc(rfc))
+            print(f"[INFO] RFC ingresado: {rfc}")
         except Exception as e:
             print(json.dumps({"ok": False, "error": "rfc_field_not_found", "e": str(e)}))
             return
@@ -51,30 +48,36 @@ def run(url, rfc, total, proveedor):
             el = driver.find_element(By.CSS_SELECTOR, "input#total")
             el.clear()
             el.send_keys(str(total))
+            print(f"[INFO] Total ingresado: {total}")
         except Exception:
-            pass
+            print("[WARN] Campo 'total' no encontrado o no llenado")
 
         # --- Captcha falso ---
         try:
             cb = driver.find_element(By.CSS_SELECTOR, "#fake-recaptcha input[type='checkbox']")
             if not cb.is_selected():
                 cb.click()
+            print("[INFO] Captcha marcado correctamente")
         except Exception:
-            pass
+            print("[WARN] Captcha no encontrado")
 
         # --- Enviar formulario ---
         try:
             btn = driver.find_element(By.CSS_SELECTOR, "#submit")
             btn.click()
+            print("[INFO] Botón 'Enviar Factura' presionado")
         except Exception as e:
             print(json.dumps({"ok": False, "error": "submit_not_found", "e": str(e)}))
             return
 
         time.sleep(1)
+        print("[INFO] Proceso completado, cerrando navegador...")
+
         print(json.dumps({
             "ok": True,
             "rfc": rfc,
             "total": total,
+            "proveedor": proveedor,
             "url": url,
             "mensaje": "Factura procesada correctamente"
         }))
@@ -84,9 +87,9 @@ def run(url, rfc, total, proveedor):
         # Limpiar el perfil temporal
         try:
             shutil.rmtree(temp_profile, ignore_errors=True)
-        except Exception:
-            pass
-
+            print(f"[INFO] Perfil temporal eliminado: {temp_profile}")
+        except Exception as e:
+            print(f"[WARN] No se pudo eliminar el perfil temporal: {e}")
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Automatiza el portal de facturación.")
