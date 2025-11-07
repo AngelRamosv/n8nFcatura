@@ -1,4 +1,4 @@
-# facturar.py (buena)
+# facturar.py
 import argparse, sys, json, time, re, tempfile, os, shutil
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -12,21 +12,23 @@ def normaliza_rfc(s):
 
 def run(url, rfc, total, proveedor):
     """Ejecuta el flujo de facturación automatizado."""
-    # Crear un perfil temporal único
-    profile_dir = tempfile.mkdtemp(prefix="selenium_profile_")
+    # Crear un perfil temporal único para evitar conflictos
+    temp_profile = tempfile.mkdtemp(prefix="chrome_profile_")
 
     opts = Options()
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--allow-file-access-from-files")
+    opts.add_argument(f"--user-data-dir={temp_profile}")
     opts.add_argument("--disable-gpu")
     opts.add_argument("--disable-software-rasterizer")
     opts.add_argument("--remote-debugging-port=0")
 
-    # Perfil aislado (cada ejecución tiene su propio directorio)
-    opts.add_argument(f"--user-data-dir={profile_dir}")
+    # ⚙️ Si estás en un servidor (n8n / Grok), deja esto activado:
+    opts.add_argument("--headless=new")
 
-    # Si deseas ver la ventana de Chrome, comenta la siguiente línea
+    # 🧩 Si lo pruebas localmente y quieres ver la ventana de Chrome,
+    # comenta la línea anterior:
     # opts.add_argument("--headless=new")
 
     driver = None
@@ -69,13 +71,19 @@ def run(url, rfc, total, proveedor):
             return
 
         time.sleep(1)
-        print(json.dumps({"ok": True, "rfc": rfc, "total": total, "url": url}))
+        print(json.dumps({
+            "ok": True,
+            "rfc": rfc,
+            "total": total,
+            "url": url,
+            "mensaje": "Factura procesada correctamente"
+        }))
     finally:
         if driver:
             driver.quit()
-        # Limpia el perfil temporal creado
+        # Limpiar el perfil temporal
         try:
-            shutil.rmtree(profile_dir, ignore_errors=True)
+            shutil.rmtree(temp_profile, ignore_errors=True)
         except Exception:
             pass
 
