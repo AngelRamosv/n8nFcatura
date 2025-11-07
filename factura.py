@@ -24,10 +24,10 @@ def run(url, rfc, total, proveedor):
     opts.add_argument("--disable-software-rasterizer")
     opts.add_argument("--remote-debugging-port=0")
 
-    # ⚙️ Si estás en un servidor (n8n / Grok), deja esto activado:
-    # opts.add_argument("--headless=new")
+    # Si estás en un servidor (n8n / Grok), deja esto activado:
+    opts.add_argument("--headless=new")
 
-    # 🧩 Si lo pruebas localmente y quieres ver la ventana de Chrome,
+    # Si lo pruebas localmente y quieres ver la ventana de Chrome,
     # comenta la línea anterior:
     # opts.add_argument("--headless=new")
 
