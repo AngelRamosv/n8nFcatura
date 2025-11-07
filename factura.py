@@ -1,5 +1,5 @@
-# facturar.py
-import argparse, sys, json, time, re
+# facturar.py (buena)
+import argparse, sys, json, time, re, tempfile, os, shutil
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -12,21 +12,26 @@ def normaliza_rfc(s):
 
 def run(url, rfc, total, proveedor):
     """Ejecuta el flujo de facturación automatizado."""
+    # Crear un perfil temporal único
+    profile_dir = tempfile.mkdtemp(prefix="selenium_profile_")
+
     opts = Options()
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--allow-file-access-from-files")
-
-    # Evita conflictos de perfiles de usuario (no usar user-data-dir)
-    # opts.add_argument("--headless=new")              # modo sin interfaz gráfica
-    opts.add_argument("--disable-gpu")               # evita errores de GPU
+    opts.add_argument("--disable-gpu")
     opts.add_argument("--disable-software-rasterizer")
-    opts.add_argument("--remote-debugging-port=9222") # usa un puerto interno único
+    opts.add_argument("--remote-debugging-port=0")
 
-    # Inicializa el navegador
-    driver = webdriver.Chrome(options=opts)
+    # Perfil aislado (cada ejecución tiene su propio directorio)
+    opts.add_argument(f"--user-data-dir={profile_dir}")
 
+    # Si deseas ver la ventana de Chrome, comenta la siguiente línea
+    # opts.add_argument("--headless=new")
+
+    driver = None
     try:
+        driver = webdriver.Chrome(options=opts)
         driver.get(url)
         wait = WebDriverWait(driver, 10)
 
@@ -66,10 +71,17 @@ def run(url, rfc, total, proveedor):
         time.sleep(1)
         print(json.dumps({"ok": True, "rfc": rfc, "total": total, "url": url}))
     finally:
-        driver.quit()
+        if driver:
+            driver.quit()
+        # Limpia el perfil temporal creado
+        try:
+            shutil.rmtree(profile_dir, ignore_errors=True)
+        except Exception:
+            pass
+
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser(description="Automatiza la captura de datos en portal de facturación.")
+    p = argparse.ArgumentParser(description="Automatiza el portal de facturación.")
     p.add_argument("--url", required=True, help="Ruta o URL del portal HTML")
     p.add_argument("--rfc", required=True, help="RFC del cliente")
     p.add_argument("--total", required=False, default="", help="Total de la factura")
