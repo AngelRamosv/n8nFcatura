@@ -1,5 +1,5 @@
 # facturar.py
-import argparse, sys, json, time, re, tempfile, os
+import argparse, sys, json, time, re
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -12,19 +12,18 @@ def normaliza_rfc(s):
 
 def run(url, rfc, total, proveedor):
     """Ejecuta el flujo de facturación automatizado."""
-    # Crear un perfil temporal único para evitar conflictos
-    profile_dir = tempfile.mkdtemp(prefix="selenium_profile_")
-
     opts = Options()
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--allow-file-access-from-files")
-    opts.add_argument(f"--user-data-dir={profile_dir}")
-    opts.add_argument("--remote-debugging-port=0")  # evita conflictos de puertos
 
-    # Si quieres que Chrome no se muestre, descomenta:
-    # opts.add_argument("--headless=new")
+    # 🔧 Evitamos conflictos de perfiles de usuario (no usar user-data-dir)
+    opts.add_argument("--headless=new")              # modo sin interfaz gráfica
+    opts.add_argument("--disable-gpu")               # evita errores de GPU
+    opts.add_argument("--disable-software-rasterizer")
+    opts.add_argument("--remote-debugging-port=9222") # usa un puerto interno único
 
+    # ✅ Inicializar el navegador
     driver = webdriver.Chrome(options=opts)
 
     try:
@@ -68,15 +67,6 @@ def run(url, rfc, total, proveedor):
         print(json.dumps({"ok": True, "rfc": rfc, "total": total, "url": url}))
     finally:
         driver.quit()
-
-        # Limpieza del perfil temporal
-        try:
-            if os.path.exists(profile_dir):
-                import shutil
-                shutil.rmtree(profile_dir)
-        except Exception:
-            pass
-
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Automatiza la captura de datos en portal de facturación.")
