@@ -1,5 +1,5 @@
 # facturar.py
-import argparse, sys, json, time, re
+import argparse, sys, json, time, re, tempfile, os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -7,26 +7,31 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 def normaliza_rfc(s):
+    """Limpia y normaliza el RFC."""
     return re.sub(r'[\s-]', '', s.upper())
 
 def run(url, rfc, total, proveedor):
+    """Ejecuta el flujo de facturación automatizado."""
+    # Crear un perfil temporal único para evitar conflictos
+    profile_dir = tempfile.mkdtemp(prefix="selenium_profile_")
+
     opts = Options()
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
-    # opts.add_argument("--headless=new")
     opts.add_argument("--allow-file-access-from-files")
+    opts.add_argument(f"--user-data-dir={profile_dir}")
+    opts.add_argument("--remote-debugging-port=0")  # evita conflictos de puertos
 
-    # NUEVA LÍNEA: crear un perfil único por ejecución
-    opts.add_argument("--user-data-dir=/tmp/selenium_" + str(time.time()))
+    # Si quieres que Chrome no se muestre, descomenta:
+    # opts.add_argument("--headless=new")
 
-    # Solo una instancia del driver
     driver = webdriver.Chrome(options=opts)
 
     try:
         driver.get(url)
         wait = WebDriverWait(driver, 10)
 
-        # rfc
+        # --- RFC ---
         try:
             el = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input#rfc")))
             el.clear()
@@ -35,7 +40,7 @@ def run(url, rfc, total, proveedor):
             print(json.dumps({"ok": False, "error": "rfc_field_not_found", "e": str(e)}))
             return
 
-        # total
+        # --- Total ---
         try:
             el = driver.find_element(By.CSS_SELECTOR, "input#total")
             el.clear()
@@ -43,7 +48,7 @@ def run(url, rfc, total, proveedor):
         except Exception:
             pass
 
-        # fake captcha
+        # --- Captcha falso ---
         try:
             cb = driver.find_element(By.CSS_SELECTOR, "#fake-recaptcha input[type='checkbox']")
             if not cb.is_selected():
@@ -51,7 +56,7 @@ def run(url, rfc, total, proveedor):
         except Exception:
             pass
 
-        # click submit
+        # --- Enviar formulario ---
         try:
             btn = driver.find_element(By.CSS_SELECTOR, "#submit")
             btn.click()
@@ -64,12 +69,21 @@ def run(url, rfc, total, proveedor):
     finally:
         driver.quit()
 
+        # Limpieza del perfil temporal
+        try:
+            if os.path.exists(profile_dir):
+                import shutil
+                shutil.rmtree(profile_dir)
+        except Exception:
+            pass
+
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser()
-    p.add_argument("--url", required=True)
-    p.add_argument("--rfc", required=True)
-    p.add_argument("--total", required=False, default="")
-    p.add_argument("--proveedor", required=False, default="")
+    p = argparse.ArgumentParser(description="Automatiza la captura de datos en portal de facturación.")
+    p.add_argument("--url", required=True, help="Ruta o URL del portal HTML")
+    p.add_argument("--rfc", required=True, help="RFC del cliente")
+    p.add_argument("--total", required=False, default="", help="Total de la factura")
+    p.add_argument("--proveedor", required=False, default="", help="Proveedor o empresa")
     args = p.parse_args()
+
     run(args.url, args.rfc, args.total, args.proveedor)
