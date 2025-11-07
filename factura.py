@@ -14,8 +14,12 @@ def run(url, rfc, total, proveedor):
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
     # opts.add_argument("--headless=new")
- 
     opts.add_argument("--allow-file-access-from-files")
+
+    # NUEVA LÍNEA: crear un perfil único por ejecución
+    opts.add_argument("--user-data-dir=/tmp/selenium_" + str(time.time()))
+
+    # Solo una instancia del driver
     driver = webdriver.Chrome(options=opts)
 
     try:
@@ -39,7 +43,7 @@ def run(url, rfc, total, proveedor):
         except Exception:
             pass
 
-        # fake captcha: click en el checkbox
+        # fake captcha
         try:
             cb = driver.find_element(By.CSS_SELECTOR, "#fake-recaptcha input[type='checkbox']")
             if not cb.is_selected():
@@ -59,6 +63,7 @@ def run(url, rfc, total, proveedor):
         print(json.dumps({"ok": True, "rfc": rfc, "total": total, "url": url}))
     finally:
         driver.quit()
+
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
