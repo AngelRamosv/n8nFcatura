@@ -17,13 +17,13 @@ def run(url, rfc, total, proveedor):
     opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--allow-file-access-from-files")
 
-    # 🔧 Evitamos conflictos de perfiles de usuario (no usar user-data-dir)
-    opts.add_argument("--headless=new")              # modo sin interfaz gráfica
+    # Evita conflictos de perfiles de usuario (no usar user-data-dir)
+    # opts.add_argument("--headless=new")              # modo sin interfaz gráfica
     opts.add_argument("--disable-gpu")               # evita errores de GPU
     opts.add_argument("--disable-software-rasterizer")
     opts.add_argument("--remote-debugging-port=9222") # usa un puerto interno único
 
-    # ✅ Inicializar el navegador
+    # Inicializa el navegador
     driver = webdriver.Chrome(options=opts)
 
     try:
